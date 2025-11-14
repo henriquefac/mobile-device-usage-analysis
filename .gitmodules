@@ -1,0 +1,4 @@
+[submodule "configPy"]
+	path = configPy
+	url = git@github.com:henriquefac/configPy.git
+	branch = config-kaggle
