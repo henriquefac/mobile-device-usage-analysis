@@ -1,7 +1,5 @@
 # Quick start
 
-Para inicializar este projeto, tenha certeza de utilizar um sistema Linux.
-
 Primeiramente, para clonar este projeto, use o seguinte comando no seu terminal:
 
 ```
@@ -19,7 +17,14 @@ Assim, com o projeto devidamente clonado, inicialize o ambiente virtual do Pytho
 Use o seguinte comando, ainda na raiz do projeto (dentro do diretório que o Git clonou):
 
 ```
+*linux*
 . configPy/bash/makenv.sh
+```
+
+FIQUE ATENTO: Se estiver usando window, use o seguinte comando:
+
+```
+call .venv\Scripts\activate
 ```
 
 Isso deve inicializar o projeto e baixar os pacotes necessários, além de configurar corretamente algumas variáveis de ambiente.
