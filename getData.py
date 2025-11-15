@@ -38,7 +38,7 @@ try:
     listzip = [f for f in list(dataset_dir.iter_files()) if f.suffix == ".zip"]
 
     for zip_f in listzip:
-        file_name = zip_f.stem
+        file_name = zip_f.name[:-4]
         unzip_dir = dataset_dir.create_dir(file_name)
         unzip_dataset(zip_f, unzip_path=unzip_dir.dir_path)
 
