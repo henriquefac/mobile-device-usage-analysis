@@ -1,4 +1,4 @@
 [submodule "configPy"]
 	path = configPy
-	url = https://github.com/henriquefac/mobile-device-usage-analysis.git
+	url = https://github.com/henriquefac/configPy.git
 	branch = config-kaggle
