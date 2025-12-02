@@ -2,92 +2,17 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import altair as alt
-
+from src.utils.load_data import load_data
 
 # --- 1. FUNÇÃO DE SIMULAÇÃO DE DADOS ---
 # Cria um DataFrame sintético que simula o conjunto de dados descrito
 @st.cache_data
-def load_data():
+def load_data_streamlit():
     """Gera o conjunto de dados sintético."""
-    np.random.seed(42)
-    N_SAMPLES = 700
-
-    # Gerar classes de comportamento (de 1 a 5)
-    classes = np.random.choice(
-        range(1, 6), size=N_SAMPLES, p=[0.25, 0.25, 0.20, 0.15, 0.15]
-    )
-
-    data = {
-        "User ID": [f"USER_{i+1:03d}" for i in range(N_SAMPLES)],
-        "Operating System": np.random.choice(["Android", "iOS"], N_SAMPLES),
-        "Age": np.random.randint(18, 65, N_SAMPLES),
-        "Gender": np.random.choice(["Masculino", "Feminino"], N_SAMPLES),
-        "User Behavior Class": classes,
-    }
-
-    df = pd.DataFrame(data)
-
-    # Criar métricas de uso correlacionadas com a classe de comportamento
-    def calculate_metrics(row):
-        cls = row["User Behavior Class"]
-        # Multiplicadores baseados na classe: (1=Light, 5=Extreme)
-        multiplier = 0.5 + (cls * 0.4)
-
-        # App Usage Time (min): 30 a 500
-        app_time = np.random.normal(loc=100 * multiplier, scale=30)
-
-        # Screen On Time (horas): 2 a 10
-        screen_time = np.random.normal(loc=2 * multiplier, scale=0.5)
-
-        # Battery Drain (mAh): 1000 a 5000
-        battery_drain = np.random.normal(loc=800 * multiplier, scale=200)
-
-        # Data Usage (MB): 50 a 5000
-        data_usage = np.random.normal(loc=400 * multiplier * 2, scale=500)
-
-        # Number of Apps Installed: 10 a 150
-        apps_installed = np.random.randint(10 + cls * 10, 50 + cls * 20)
-
-        return pd.Series(
-            [
-                max(0, app_time),
-                max(0, screen_time),
-                max(1000, battery_drain),
-                max(50, data_usage),
-                max(10, apps_installed),
-            ]
-        )
-
-    df[
-        [
-            "App Usage Time",
-            "Screen On Time",
-            "Battery Drain",
-            "Data Usage",
-            "Number of Apps Installed",
-        ]
-    ] = df.apply(calculate_metrics, axis=1)
-
-    # Arredondar e corrigir tipos
-    df["App Usage Time"] = df["App Usage Time"].round(0).astype(int)
-    df["Screen On Time"] = df["Screen On Time"].round(1)
-    df["Battery Drain"] = df["Battery Drain"].round(0).astype(int)
-    df["Data Usage"] = df["Data Usage"].round(0).astype(int)
-    df["Number of Apps Installed"] = df["Number of Apps Installed"].astype(int)
-    df["User Behavior Class"] = df["User Behavior Class"].astype(
-        str
-    )  # Para tratamento categórico
-
-    # Adicionar Device Model
-    df["Device Model"] = np.random.choice(
-        ["Galaxy S21", "iPhone 15", "Pixel 8", "Xiaomi 13"], N_SAMPLES
-    )
-
-    return df
-
+    return load_data()
 
 # Carregar os dados simulados
-df = load_data()
+df = load_data_streamlit()
 
 # --- 2. CONFIGURAÇÃO DO STREAMLIT ---
 
@@ -151,25 +76,25 @@ if df_filtered.empty:
 col1, col2, col3, col4 = st.columns(4)
 
 total_users = len(df_filtered)
-avg_app_time = df_filtered["App Usage Time"].mean()
-avg_screen_time = df_filtered["Screen On Time"].mean()
-avg_data_usage = df_filtered["Data Usage"].mean()
+avg_app_time = df_filtered["App Usage Time (min/day)"].mean()
+avg_screen_time = df_filtered["Screen On Time (hours/day)"].mean()
+avg_data_usage = df_filtered["Data Usage (MB/day)"].mean()
 
 col1.metric("Total de Usuários", f"{total_users}")
 col2.metric(
     "Tempo Médio de Uso de App",
     f"{avg_app_time:,.0f} min",
-    delta=f"Total: {df_filtered['App Usage Time'].sum():,.0f} min",
+    delta=f"Total: {df_filtered['App Usage Time (min/day)'].sum():,.0f} min",
 )
 col3.metric(
     "Tempo Médio de Tela Ligada",
     f"{avg_screen_time:.1f} horas",
-    delta=f"Máx: {df_filtered['Screen On Time'].max():.1f} h",
+    delta=f"Máx: {df_filtered['Screen On Time (hours/day)'].max():.1f} h",
 )
 col4.metric(
     "Consumo Médio de Dados",
     f"{avg_data_usage:,.0f} MB",
-    delta=f"Total: {df_filtered['Data Usage'].sum():,.0f} MB",
+    delta=f"Total: {df_filtered['Data Usage (MB/day)'].sum():,.0f} MB",
 )
 
 st.markdown("---")
@@ -189,15 +114,15 @@ with col_corr:
         alt.Chart(df_filtered)
         .mark_circle(size=60)
         .encode(
-            x=alt.X("App Usage Time", title="Tempo de Uso de App (min)"),
-            y=alt.Y("Battery Drain", title="Drenagem de Bateria (mAh)"),
+            x=alt.X("App Usage Time (min/day)", title="Tempo de Uso de App (min)"),
+            y=alt.Y("Battery Drain (mAh/day)", title="Drenagem de Bateria (mAh)"),
             color=alt.Color("Operating System", title="OS"),
             tooltip=[
-                "App Usage Time",
-                "Battery Drain",
+                "App Usage Time (min/day)",
+                "Battery Drain (mAh/day)",
                 "Operating System",
                 "Gender",
-                "Class Label",
+                "User Behavior Class",
             ],
         )
         .properties(title="Uso de App vs. Drenagem de Bateria (por OS)")
@@ -218,7 +143,7 @@ with col_os:
     # Agrupar por OS e calcular médias
     df_os_agg = (
         df_filtered.groupby("Operating System")[
-            ["Screen On Time", "Data Usage", "Number of Apps Installed"]
+            ["Screen On Time (hours/day)", "Data Usage (MB/day)", "Number of Apps Installed"]
         ]
         .mean()
         .reset_index()
@@ -268,12 +193,12 @@ with col_gender:
         .mark_bar()
         .encode(
             x=alt.X("Age Group:N", title="Faixa Etária"),
-            y=alt.Y("mean(App Usage Time):Q", title="Tempo Médio de Uso de App (min)"),
+            y=alt.Y("mean(App Usage Time (min/day)):Q", title="Tempo Médio de Uso de App (min)"),
             color=alt.Color("Gender", title="Gênero"),
             tooltip=[
                 "Gender",
                 "Age Group",
-                alt.Tooltip("mean(App Usage Time)", format=".0f"),
+                alt.Tooltip("mean(App Usage Time (min/day))", format=".0f"),
             ],
         )
         .properties(title="Uso de App por Gênero e Faixa Etária")
